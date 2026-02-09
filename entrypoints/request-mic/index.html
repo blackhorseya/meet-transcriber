@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Meet Transcriber - 麥克風權限</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 400px;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+
+    p {
+      font-size: 14px;
+      color: #9aa0a6;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    button {
+      padding: 14px 28px;
+      background-color: #8ab4f8;
+      color: #1e1e1e;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #aecbfa;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .success {
+      color: #81c995;
+    }
+
+    .error {
+      color: #f28b82;
+    }
+
+    .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content">
+      <div class="icon">🎤</div>
+      <h1>麥克風權限授權</h1>
+      <p>
+        Meet Transcriber 需要麥克風權限來錄製你的聲音。<br>
+        請點擊下方按鈕並允許麥克風存取。
+      </p>
+      <button id="request-btn">授權麥克風</button>
+    </div>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
