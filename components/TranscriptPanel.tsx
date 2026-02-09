@@ -1,6 +1,6 @@
 /**
  * TranscriptPanel - 逐字稿顯示面板
- * 固定在 Meet 頁面右側，即時顯示轉錄結果
+ * 浮動視窗，可拖曳移動位置
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -13,8 +13,6 @@ import type { TranscriptEntry, OffscreenMessage } from '@/lib/message-types';
 const styles = {
   container: {
     position: 'fixed' as const,
-    top: '60px',
-    right: '16px',
     width: '320px',
     maxHeight: 'calc(100vh - 120px)',
     backgroundColor: '#1e1e1e',
@@ -35,6 +33,11 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    cursor: 'grab',
+    userSelect: 'none' as const,
+  },
+  headerDragging: {
+    cursor: 'grabbing',
   },
   title: {
     margin: 0,
@@ -107,9 +110,50 @@ export function TranscriptPanel() {
 
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
-  // Phase 2 會用 setCurrentSpeaker 來更新說話者（MutationObserver 偵測）
   const [currentSpeaker, _setCurrentSpeaker] = useState('未知');
   const listRef = useRef<HTMLDivElement>(null);
+
+  // 拖曳相關狀態
+  const [position, setPosition] = useState({ top: 60, right: 16 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, top: 0, right: 0 });
+
+  // 拖曳事件處理
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsDragging(true);
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      top: position.top,
+      right: position.right,
+    };
+  }, [position]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = dragStart.current.x - e.clientX;
+      const deltaY = e.clientY - dragStart.current.y;
+      
+      const newRight = Math.max(0, dragStart.current.right + deltaX);
+      const newTop = Math.max(0, dragStart.current.top + deltaY);
+      
+      setPosition({ top: newTop, right: newRight });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   // 自動捲動到最新內容
   const scrollToBottom = useCallback(() => {
@@ -118,11 +162,9 @@ export function TranscriptPanel() {
     }
   }, []);
 
-  // 監聯來自 background 的訊息
+  // 監聽來自 background 的訊息
   useEffect(() => {
     console.log('[TranscriptPanel] Setting up message listener...');
-    console.log('[TranscriptPanel] browser available:', typeof browser !== 'undefined');
-    console.log('[TranscriptPanel] browser.runtime available:', typeof browser !== 'undefined' && !!browser?.runtime);
 
     const handleMessage = (message: OffscreenMessage) => {
       console.log('[TranscriptPanel] Received message:', message.type);
@@ -145,7 +187,6 @@ export function TranscriptPanel() {
             sequenceNumber: message.sequenceNumber,
           };
           setTranscripts((prev) => {
-            // 依 sequenceNumber 排序插入
             const updated = [...prev, entry].sort(
               (a, b) => a.sequenceNumber - b.sequenceNumber
             );
@@ -219,7 +260,6 @@ export function TranscriptPanel() {
   const groupedTranscripts = transcripts.reduce<TranscriptEntry[]>((acc, curr) => {
     const last = acc[acc.length - 1];
     if (last && last.speaker === curr.speaker) {
-      // 合併文字
       last.text += ' ' + curr.text;
     } else {
       acc.push({ ...curr });
@@ -228,8 +268,20 @@ export function TranscriptPanel() {
   }, []);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div
+      style={{
+        ...styles.container,
+        top: `${position.top}px`,
+        right: `${position.right}px`,
+      }}
+    >
+      <div
+        style={{
+          ...styles.header,
+          ...(isDragging ? styles.headerDragging : {}),
+        }}
+        onMouseDown={handleMouseDown}
+      >
         <h3 style={styles.title}>逐字稿</h3>
         <span
           style={{
